@@ -1,0 +1,37 @@
+# Automation sử dụng Event Trigger (tối ưu)
+- id: '1001'                                    # ID duy nhất của automation
+  alias: Fast MQTT Response                     # Tên hiển thị
+  description: 'Phản hồi nhanh khi nhận MQTT message'
+  
+  trigger:
+    - platform: event                           # Trigger kiểu EVENT
+      event_type: mqtt_message_received         # Loại event: nhận MQTT message
+      event_data:                               # Điều kiện của event data
+        topic: zigbee/zigbee_temp_sensor_01/state  # Chỉ trigger khi topic này
+  
+  action:
+    - service: notify.persistent_notification   # Tạo thông báo
+      data:
+        title: "Sensor Update"
+        message: >
+          Temperature: {{ trigger.event.data.payload_json.temperature }}°C
+          # Lấy giá trị temperature trực tiếp từ MQTT payload
+
+# Automation sử dụng State Trigger (so sánh)
+- id: '1002'                                    # ID duy nhất
+  alias: Slow State Response                    # Tên hiển thị
+  description: 'Phản hồi qua State Machine'
+  
+  trigger:
+    - platform: state                           # Trigger kiểu STATE
+      entity_id: sensor.living_room_temperature # Entity cần theo dõi
+      # Không có điều kiện from/to → trigger mỗi khi state thay đổi
+  
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "State Changed"
+        message: >
+          New temperature: {{ states('sensor.living_room_temperature') }}°C
+          # Lấy giá trị từ State Machine (có thể bị delay)
+

@@ -1,0 +1,106 @@
+# Cấu hình cơ bản
+homeassistant:
+  name: Smart Home Demo
+  latitude: 10.2453
+  longitude: 105.9668
+  elevation: 5
+  unit_system: metric
+  time_zone: Asia/Ho_Chi_Minh
+  country: VN
+
+# Cấu hình MariaDB (Nhiệm vụ 19: Tối ưu hóa bộ lưu trữ)
+recorder:
+  db_url: mysql://homeassistant:homeassistant_pass@mariadb/homeassistant?charset=utf8mb4
+  purge_keep_days: 7
+  commit_interval: 5
+  exclude:
+    domains:
+      - automation
+      - updater
+    entity_globs:
+      - sensor.*_rssi
+    entities:
+      - sun.sun
+      - sensor.date
+      - sensor.time
+      # Lưu ý: Đã bỏ loại trừ processor_use để phục vụ báo cáo Stress Test
+
+# Kích hoạt các tính năng cần thiết cho Docker
+http:
+  server_port: 8123
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.18.0.0/16
+
+# Hệ thống monitor
+system_health:
+
+# Logger (Theo dõi giao thức MQTT)
+logger:
+  default: info
+  logs:
+    homeassistant.components.mqtt: debug
+
+# Template sensors (Mô phỏng thiết bị Wi-Fi đa giao thức)
+template:
+  - sensor:
+      - name: "WiFi Smart Plug Power"
+        unique_id: "wifi_smart_plug_power_sim_001"
+        state: >
+          {% set hour = now().hour %}
+          {% if hour >= 18 or hour < 6 %}
+            {{ range(50, 150) | random }}
+          {% else %}
+            {{ range(0, 30) | random }}
+          {% endif %}
+        unit_of_measurement: "W"
+        device_class: power
+
+      - name: "WiFi Light Brightness"
+        unique_id: "wifi_light_brightness_sim_001"
+        state: >
+          {{ range(0, 100) | random }}
+        unit_of_measurement: "%"
+
+  - switch:
+      - name: "WiFi Smart Plug"
+        unique_id: "wifi_smart_plug_switch_001"
+        state: "{{ is_state('input_boolean.smart_plug_helper', 'on') }}"
+        turn_on:
+          - service: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.smart_plug_helper
+        turn_off:
+          - service: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.smart_plug_helper
+
+# Helper để lưu trạng thái
+input_boolean:
+  smart_plug_helper:
+    name: Smart Plug State Helper
+    icon: mdi:power-plug
+
+# History và Logbook (Hiển thị biểu đồ cho báo cáo)
+history:
+  include:
+    domains:
+      - sensor
+      - switch
+    entities:
+      - sensor.processor_use
+      - sensor.memory_use_percent
+
+logbook:
+  include:
+    domains:
+      - automation
+
+# Cấu hình mặc định và nạp các file phụ
+default_config:
+frontend:
+  themes: !include_dir_merge_named themes
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
