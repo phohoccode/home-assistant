@@ -18,6 +18,7 @@ recorder:
       - automation
       - updater
     entity_globs:
+      - sensor.system_monitor_*
       - sensor.*_rssi
     entities:
       - sun.sun

@@ -1,37 +1,31 @@
-# Automation sử dụng Event Trigger (tối ưu)
-- id: '1001'                                    # ID duy nhất của automation
-  alias: Fast MQTT Response                     # Tên hiển thị
-  description: 'Phản hồi nhanh khi nhận MQTT message'
-  
-  trigger:
-    - platform: event                           # Trigger kiểu EVENT
-      event_type: mqtt_message_received         # Loại event: nhận MQTT message
-      event_data:                               # Điều kiện của event data
-        topic: zigbee/zigbee_temp_sensor_01/state  # Chỉ trigger khi topic này
-  
-  action:
-    - service: notify.persistent_notification   # Tạo thông báo
-      data:
-        title: "Sensor Update"
-        message: >
-          Temperature: {{ trigger.event.data.payload_json.temperature }}°C
-          # Lấy giá trị temperature trực tiếp từ MQTT payload
 
-# Automation sử dụng State Trigger (so sánh)
-- id: '1002'                                    # ID duy nhất
-  alias: Slow State Response                    # Tên hiển thị
-  description: 'Phản hồi qua State Machine'
-  
+# Automation 1: Event Trigger (Fast) - Nhận trực tiếp từ MQTT
+- id: '1001'
+  alias: Fast MQTT Response
+  description: 'Phản hồi nhanh khi nhận MQTT message'
   trigger:
-    - platform: state                           # Trigger kiểu STATE
-      entity_id: sensor.living_room_temperature # Entity cần theo dõi
-      # Không có điều kiện from/to → trigger mỗi khi state thay đổi
-  
+      - platform: mqtt
+        topic: zigbee/zigbee_temp_sensor_01/state
   action:
     - service: notify.persistent_notification
       data:
-        title: "State Changed"
+        title: "⚡ Fast MQTT - {{ now().strftime('%H:%M:%S.%f')[:-3] }}"
         message: >
-          New temperature: {{ states('sensor.living_room_temperature') }}°C
-          # Lấy giá trị từ State Machine (có thể bị delay)
+          Temperature: {{ trigger.event.data.payload_json.temperature }}°C
+          Humidity: {{ trigger.event.data.payload_json.humidity }}%
+          Battery: {{ trigger.event.data.payload_json.battery }}%
 
+# Automation 2: State Trigger (Slow) - Đợi State Machine cập nhật
+- id: '1002'
+  alias: Slow State Response
+  description: 'Phản hồi qua State Machine'
+  trigger:
+    - platform: state
+      entity_id: sensor.zigbee_temperature_sensor_living_room_temperature
+  action:
+    - service: notify.persistent_notification
+      data:
+        title: "🐌 Slow State - {{ now().strftime('%H:%M:%S.%f')[:-3] }}"
+        message: >
+          Temperature: {{ states('sensor.zigbee_temperature_sensor_living_room_temperature') }}°C
+          Humidity: {{ states('sensor.zigbee_temperature_sensor_living_room_humidity') }}%

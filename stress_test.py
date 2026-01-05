@@ -4,7 +4,7 @@ import time
 import threading
 import random
 
-MQTT_BROKER = "localhost"
+MQTT_BROKER = "127.0.0.1"
 MQTT_PORT = 1883
 NUM_DEVICES = 50  # Số lượng thiết bị giả lập
 MESSAGES_PER_SECOND = 10
